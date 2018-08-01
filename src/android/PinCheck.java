@@ -45,27 +45,39 @@ public class PinCheck extends CordovaPlugin {
     }
 
     private boolean isDeviceSecure(Context context) {
-        // https://stackoverflow.com/questions/39784415/how-to-detect-programmatically-if-android-app-is-running-in-chrome-book-or-in
-        if( context.getPackageManager().hasSystemFeature("org.chromium.arc.device_management")) { 
-            Log.d(TAG, "has arc.device_management ");
+
+        boolean isSecure;
+
+        KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if (PinCheck.isDeviceSecureSupported) {
+            Log.d(TAG, "calling KeyguardManager.isDeviceSecure()");
+            isSecure = keyguardManager.isDeviceSecure();
+        } else {
+            Log.d(TAG, "calling KeyguardManager.isKeyguardSecure()");
+            isSecure = keyguardManager.isKeyguardSecure();
+        }
+
+        if(isSecure) {
             return true;
+        }
+
+        // https://stackoverflow.com/questions/39784415/how-to-detect-programmatically-if-android-app-is-running-in-chrome-book-or-in
+        if( context.getPackageManager().hasSystemFeature("org.chromium.arc.device_management")) {
+            Log.d(TAG, "org.chromium.arc.device_management SystemFeature present");
+            return true;
+        } else {
+            Log.d(TAG, "org.chromium.arc.device_management SystemFeature not present");
         }
 
         // See: https://github.com/google/talkback/blob/e69d4731fce02bb9e69613d0e48c29033cad4a98/utils/src/main/java/FormFactorUtils.java#L51
         if(Build.DEVICE != null) { 
             Log.d(TAG, "Build.DEVICE: " + Build.DEVICE);
             if(Build.DEVICE.matches(ARC_DEVICE_PATTERN)) { 
+                Log.d(TAG, "matches pattern: " + ARC_DEVICE_PATTERN);
                 return true;
             }
         }
 
-        KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-        if (PinCheck.isDeviceSecureSupported) {
-            Log.d(TAG, "calling KeyguardManager.isDeviceSecure()");
-            return keyguardManager.isDeviceSecure();
-        } else {
-            Log.d(TAG, "calling KeyguardManager.isKeyguardSecure()");
-            return keyguardManager.isKeyguardSecure();
-        }
+        return false;
     }
 }
